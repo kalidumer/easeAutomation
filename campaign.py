@@ -13,13 +13,23 @@ API = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 MAX_TARGETS_PER_RUN = 10
 DATABASE = "campaign.db"
 
+# Scheduled UTC hours:
+# 05:00 = 08:00 Ethiopia
+# 10:00 = 13:00 Ethiopia
+# 17:00 = 20:00 Ethiopia
+SCHEDULED_HOURS = {
+    5: "morning",
+    10: "afternoon",
+    17: "night"
+}
+
 MESSAGE = """🎓 EASE ONLINE ACADEMY 🇪🇹
 
-Discover Ease Online Academy, an educational platform designed to help students access learning resources and improve their knowledge via tutoring themselves.
+Discover Ease Online Academy, an educational platform designed to help students access learning resources and improve their knowledge through self-study.
 
 🌐 https://ease-online-academy.ai.studio
 
-Ease Online Academy ለተማሪዎች የትምህርት መረጃዎችንና የመማሪያ ግብዓቶችን ለማግኘት የሚረዳ የትምህርት መድረክ ነው። እንዲሁም እራሳቸው ማጥናት ሚችሉበት መንገድ አመቻችቶ መጥቷል!
+Ease Online Academy ለተማሪዎች የትምህርት መረጃዎችንና የመማሪያ ግብዓቶችን ለማግኘት የሚረዳ የትምህርት መድረክ ነው።
 
 🌐 https://ease-online-academy.ai.studio
 
@@ -36,25 +46,56 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s"
 )
 
+
 def database():
     conn = sqlite3.connect(DATABASE)
+
+    # Separate record for each destination and daily time slot.
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS sent (
+        CREATE TABLE IF NOT EXISTS sent_slots (
             chat_id TEXT NOT NULL,
             sent_date TEXT NOT NULL,
-            PRIMARY KEY(chat_id, sent_date)
+            slot TEXT NOT NULL,
+            PRIMARY KEY (chat_id, sent_date, slot)
         )
     """)
+
     conn.commit()
     return conn
+
 
 def load_targets():
     with open("targets.txt", encoding="utf-8") as f:
         return list(dict.fromkeys(
             line.strip()
             for line in f
-            if line.strip() and not line.startswith("#")
+            if line.strip() and not line.strip().startswith("#")
         ))
+
+
+def get_slot():
+    now = datetime.now(timezone.utc)
+
+    # Choose the nearest scheduled hour, allowing for GitHub delays.
+    nearest_hour = min(
+        SCHEDULED_HOURS,
+        key=lambda hour: min(
+            abs(now.hour - hour),
+            24 - abs(now.hour - hour)
+        )
+    )
+
+    distance = min(
+        abs(now.hour - nearest_hour),
+        24 - abs(now.hour - nearest_hour)
+    )
+
+    if distance <= 2:
+        return now.date().isoformat(), SCHEDULED_HOURS[nearest_hour]
+
+    # Manual runs outside scheduled windows get their own slot.
+    return now.date().isoformat(), "manual-" + now.strftime("%H%M")
+
 
 def telegram_send(chat_id):
     payload = urllib.parse.urlencode({
@@ -77,15 +118,19 @@ def telegram_send(chat_id):
 
     return result
 
+
 def run_campaign():
-    today = datetime.now(timezone.utc).date().isoformat()
+    today, slot = get_slot()
 
     conn = database()
     targets = load_targets()
 
     sent_count = 0
 
-    logging.info("Starting Ease Online Academy campaign")
+    logging.info(
+        "Starting campaign: date=%s, slot=%s",
+        today, slot
+    )
 
     for chat_id in targets:
 
@@ -93,8 +138,11 @@ def run_campaign():
             break
 
         previous = conn.execute(
-            "SELECT 1 FROM sent WHERE chat_id=? AND sent_date=?",
-            (chat_id, today)
+            """
+            SELECT 1 FROM sent_slots
+            WHERE chat_id=? AND sent_date=? AND slot=?
+            """,
+            (chat_id, today, slot)
         ).fetchone()
 
         if previous:
@@ -104,8 +152,8 @@ def run_campaign():
             telegram_send(chat_id)
 
             conn.execute(
-                "INSERT INTO sent VALUES (?, ?)",
-                (chat_id, today)
+                "INSERT INTO sent_slots VALUES (?, ?, ?)",
+                (chat_id, today, slot)
             )
             conn.commit()
 
@@ -115,8 +163,13 @@ def run_campaign():
         except Exception as error:
             logging.error("Failed for %s: %s", chat_id, error)
 
-    logging.info("Campaign finished: %s successful posts", sent_count)
+    logging.info(
+        "Campaign finished: %s successful posts",
+        sent_count
+    )
+
     conn.close()
+
 
 if __name__ == "__main__":
     run_campaign()
