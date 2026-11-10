@@ -3,7 +3,7 @@ name: Ease Online Academy Outreach
 
 on:
   schedule:
-    - cron: "0 18 * * *"
+  - cron: "0 5,10,17 * * *"
   workflow_dispatch:
 
 permissions:
