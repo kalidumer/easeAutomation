@@ -18,28 +18,25 @@ DATABASE = "campaign.db"
 # 10:00 = 13:00 Ethiopia
 # 17:00 = 20:00 Ethiopia
 SCHEDULED_HOURS = {
-    5: "morning",
-    10: "afternoon",
-    17: "night"
+    10: "afternoon"
 }
 
 MESSAGE = """🎓 EASE ONLINE ACADEMY 🇪🇹
 
-Discover Ease Online Academy, an educational platform designed to help students access learning resources and improve their knowledge through self-study.
+ራሶን በራሶ ቤት ውስጥ ሆኖ ለማስተማር ይህንን ሊንክ ይንኩ፡ https://ease-online-academy.ai.studio/
 
-🌐 https://ease-online-academy.ai.studio
+አስጠኚ ከፈለጉ በቴሌግራም username = @fremfr ወይም 0991490243 ያናግሩኝ
 
-Ease Online Academy ለተማሪዎች የትምህርት መረጃዎችንና የመማሪያ ግብዓቶችን ለማግኘት የሚረዳ የትምህርት መድረክ ነው።
+ቴሌግራም ቻናሉን Join ፡ https://t.me/easeacadamy 
+ቴሌግራም ግሩፑን join : https://t.me/easeacademyy
 
-🌐 https://ease-online-academy.ai.studio
+Ease Online Academy ለተማሪዎች የትምህርት መረጃዎችን ፣ ጥናት ና የመማሪያ ግብዓቶችን ለማግኘት የሚረዳ የትምህርት መድረክ ነው።
+
+ከ 5 እስከ 12ኛ ክፍል ሙሉ ትምህርት እናስጠናለን!
 
 Ease Online Academy waltajjii barnootaa barattoonni beekumsa isaanii guddisuu fi meeshaalee barnootaa argachuuf itti fayyadamuu danda'aniidha.
 
-🌐 https://ease-online-academy.ai.studio
-
-❤️ Share with Ethiopian students!
-Education creates opportunities.
-"""
+Discover Ease Online Academy, an educational platform designed to help students access learning resources and improve their knowledge through self-study."""
 
 logging.basicConfig(
     level=logging.INFO,
